@@ -14,13 +14,12 @@ class ObluAnalytics:
     def __init__(self, lag_vector_length=50):
         self.lag_vector_length = lag_vector_length
 
-    def get_threshold_score(self, data_path='../sensor/GetData/steps.txt'):
-        df = pd.read_csv(data_path, skiprows=1, header=None, usecols=[1, 2])
-        x_train_data = (df[1] + df[2]) / 2
-
+    def get_threshold_score(self, data_path=None):
+        df = pd.read_csv(data_path, nrows=500, header=None)
+        x_train_data = df[1]
         # N = len(x_train_data)
         L = self.lag_vector_length
-        print(L)
+        # print(L)
         x_train = hankel(x_train_data[:L], x_train_data[L - 1:])  # Creating trajectory matrix
         eigen_values, eigen_vectors = eigh(np.matmul(x_train, x_train.T))
         idx = eigen_values.argsort()[::-1]
@@ -49,10 +48,13 @@ class ObluAnalytics:
         return UT, centroid, theta
 
     @staticmethod
-    def get_score(UT, centroid, x, y):
-        x, y = np.array(x, dtype='float64'), np.array(y, dtype='float64')
-        stream = [np.sum(z) / 2 for z in list(zip(x, y))]
-        stream = np.array(stream, dtype='float64')
+    def get_score(UT, centroid, x=None, y=None):
+        if x:
+            x, y = np.array(x, dtype='float64'), np.array(y, dtype='float64')
+            stream = [np.sum(z) / 2 for z in list(zip(x, y))]
+            stream = np.array(stream, dtype='float64')
+        else:
+            stream = np.array(y, dtype='float64')
         lag_vector = stream[:, np.newaxis]
         projected_lag_vector = np.matmul(UT, lag_vector)
         dist = centroid - projected_lag_vector
